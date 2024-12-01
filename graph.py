@@ -50,6 +50,31 @@ class Graph:
         
     # TODO RemoveEdge Function
 
+    def generateRandomGraph(self, playArea, numNodes, generateEdgeProbability):
+        self.nodes = []
+        self.adjacency_matrix = []
+        startX, endX, startY, endY = playArea[0], playArea[1], playArea[2], playArea[3]
+
+        i = 0
+        while i <= numNodes:
+            x = random.randint(startX, endX)
+            y = random.randint(startY, endY)
+            if [x, y, 20] not in self.nodes:
+                self.addNode([x, y])
+                i += 1
+        
+        for i in range(len(self.nodes)):
+            for j in range(len(self.nodes)):
+                if i == j:
+                    continue
+                if random.random() < generateEdgeProbability:
+                    node1 = self.nodes[i]
+                    node2 = self.nodes[j]
+                    self.addEdge(node1, node2)
+                    
+
+
+
     def getTransitionMatrixForPageRank(self):
         numNodes = len(self.nodes)
 

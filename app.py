@@ -1,7 +1,10 @@
 from cmu_graphics import *
 import random
 from graph import Graph
-from shapes import drawCapsule
+from shapes import drawCapsule, drawSpeedBar, returnSpeedBarPos
+
+
+
 
 def onAppStart(app):
     app.width = 1000
@@ -28,16 +31,20 @@ def onAppStart(app):
     app.locked = False
    
 
-    app.computePageRankButton = {'Compute PageRank': {'id': 'compute_pagerank', 'label': 'Compute Pagerank', 'x': 40, 'y': 450, 'width': 120, 'height': 60, 'activated': False, 'fill': 'cyan'}}
-    app.runSimButton = {'Run Simulation': {'id': 'run_sim', 'label': 'Run Simulation', 'x': 40, 'y': 520, 'width': 120, 'height': 60, 'activated': False, 'fill': 'cyan'}}
-    app.stopSimButton = {'Stop Simulation': {'id': 'stop_sim', 'label': 'Stop Simulation', 'x': 40, 'y': 520, 'width': 120, 'height': 60, 'activated': False}}
+    app.computePageRankButton = {'Compute PageRank': {'id': 'compute_pagerank', 'label': 'Compute Pagerank', 'x': 50, 'y': 450, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
+    app.runSimButton = {'Run Simulation': {'id': 'run_sim', 'label': 'Run Simulation', 'x': 50, 'y': 520, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
+    app.stopSimButton = {'Stop Simulation': {'id': 'stop_sim', 'label': 'Stop Simulation', 'x': 50, 'y': 520, 'width': 100, 'height': 60, 'activated': False}}
+    app.generateGraphButton = {'Generate Random Graph': {'id': 'generate_random', 'label': 'Generate Random Network', 'x': 40, 'y': 200, 'width': 120, 'height': 40, 'activated': False}}
     
+    app.speedCirclesPos = []
+    app.selectedSpeed = 1
+
 def returnButtons():
     d = {
-        'Edit Pages': {'id': 'page_edit', 'label': 'Edit Pages', 'x': 40, 'y': 50, 'width': 120, 'height': 40, 'activated': True, 'fill': None},
-        'Edit Links': {'id': 'link_edit', 'label': 'Edit Links', 'x': 40, 'y': 100, 'width': 120, 'height': 40, 'activated': False, 'fill': None},
-        'Eraser': {'id': 'eraser', 'label': '⌫', 'x': 40, 'y': 150, 'width': 30, 'height': 40, 'activated': False, 'fill': None},
-        'Clear All': {'id': 'clear_all', 'label': 'Clear All', 'x': 80, 'y': 150, 'width': 80, 'height': 40, 'activated': False, 'fill': 'crimson'}
+        'Edit Pages': {'id': 'page_edit', 'label': 'Edit Pages', 'x': 40, 'y': 40, 'width': 120, 'height': 40, 'activated': True, 'fill': None},
+        'Edit Links': {'id': 'link_edit', 'label': 'Edit Links', 'x': 40, 'y': 90, 'width': 120, 'height': 40, 'activated': False, 'fill': None},
+        'Eraser': {'id': 'eraser', 'label': '⌫', 'x': 40, 'y': 140, 'width': 15, 'height': 40, 'activated': False, 'fill': None},
+        'Clear All': {'id': 'clear_all', 'label': 'Clear All', 'x': 100, 'y': 140, 'width': 60, 'height': 40, 'activated': False, 'fill': 'crimson'}
     }
 
     return d
@@ -54,7 +61,7 @@ def redrawAll(app):
     drawLine(startX, 0, startX, app.height)
     drawLine(endX, 0, endX, app.height)
     
-    drawLabel("Network Design", 40, 30, font='Times New Roman', align='left', size=14, bold=True)
+    drawLabel("Network Design", 100, 20, font='Times New Roman', align='center', size=14, bold=True)
     # Draw Buttons
     for key in app.buttons:
         button = app.buttons[key]
@@ -70,18 +77,44 @@ def redrawAll(app):
             drawCapsule(button['x'], button['y'], button['width'], button['height'], border='black', fill=button['fill'] if not app.simulationRunning else 'gainsboro')
         drawLabel(button['label'], button['x'] + button['width']/2, button['y'] + button['height']/2, size=12)
     
-    drawLine(40, 210, 160, 210)
-    drawLabel("Simulation Settings", 40, 230, font='Times New Roman', align='left', size=14, bold=True)
+
+
+
+
+
+    # drawLine(20, 200, 180, 200)
+
+    # Generate Random Graph Button
+    generateRandomGraph = app.generateGraphButton
+    generateRandomGraphButton = generateRandomGraph['Generate Random Graph']
+    gRGH = generateRandomGraphButton['height']
+
+    drawCapsule(generateRandomGraphButton['x'], generateRandomGraphButton['y'], generateRandomGraphButton['width'], generateRandomGraphButton['height'], border='black', fill='burlyWood' if not app.simulationRunning else 'gainsboro')
+    drawLabel(generateRandomGraphButton['label'], generateRandomGraphButton['x'] + generateRandomGraphButton['width']/2, generateRandomGraphButton['y'] + generateRandomGraphButton['height']/2, size=11)
+
+
+    drawLine(20, 260, 180, 260)
+    drawLabel("Simulation Settings", 40, 280, font='Times New Roman', align='left', size=14, bold=True)
     
 
+    # Speed BAR
+
+    drawLabel("Speed:", 20, 300, align='left', size=12)
+    drawSpeedBar(30, 320, 140, selectedSpeed=app.selectedSpeed)
+
+    drawLine(20, 430, 180, 430)
+
+    # Right Panel:
+
+    drawCapsule(830, 20, 140, 30, border='black', fill='whiteSmoke')
+    drawLabel("🔍 Page Rankings", 830, 35, align='left', font='Symbols', size=12)
 
 
-    drawLine(40, 430, 160, 430)
     # Just compute PageRank
     computePageRank = app.computePageRankButton
     computePageRankButton = computePageRank['Compute PageRank']
 
-    drawRect(computePageRankButton['x'], computePageRankButton['y'], computePageRankButton['width'], computePageRankButton['height'], border='black', fill='powderBlue' if not app.simulationRunning else 'gainsboro')
+    drawCapsule(computePageRankButton['x'], computePageRankButton['y'], computePageRankButton['width'], computePageRankButton['height'], border='black', fill='powderBlue' if not app.simulationRunning else 'gainsboro')
     drawLabel(computePageRankButton['label'], computePageRankButton['x'] + computePageRankButton['width']/2, computePageRankButton['y'] + computePageRankButton['height']/2, size=12, bold=True)
 
     runSim = app.runSimButton
@@ -97,7 +130,7 @@ def redrawAll(app):
         runStopLabel = 'Stop Simulation'
         buttonColor = 'crimson'
 
-    drawRect(runSimButton['x'], runSimButton['y'], runSimButton['width'], runSimButton['height'], border='black', fill=buttonColor)
+    drawCapsule(runSimButton['x'], runSimButton['y'], runSimButton['width'], runSimButton['height'], border='black', fill=buttonColor)
     drawLabel(runStopLabel, runSimButton['x'] + runSimButton['width']/2, runSimButton['y'] + runSimButton['height']/2, size=12, bold=True)
 
 
@@ -197,6 +230,34 @@ def onMousePress(app, mouseX, mouseY):
                 other_button['activated'] = True if (other_key == key) else False
             return
     
+    # Check if we're clicking in the generate random graph button:
+    generateRandomGraph = app.generateGraphButton
+    generateRandomGraphButton = generateRandomGraph['Generate Random Graph']
+    if (generateRandomGraphButton['x'] <= mouseX <= generateRandomGraphButton['x'] + generateRandomGraphButton['width'] and 
+        generateRandomGraphButton['y'] <= mouseY <= generateRandomGraphButton['y'] + generateRandomGraphButton['height']):
+            numNodes = random.randint(4, 12)
+            generateEdgeProbability = random.uniform(0.05, 0.5)
+
+            # Get play area bounds
+            width, height = app.width, app.height
+            startX, endX = (1/5)*width, (4/5)*width
+            startY, endY = (1/8)*height, (7/8)*height
+
+            playArea = [startX, endX, startY, endY]
+            app.graph.generateRandomGraph(playArea, numNodes = numNodes, generateEdgeProbability = generateEdgeProbability)
+
+    # Need to check if we're changing the speed:
+    circlePos = returnSpeedBarPos(30, 320, 140, selectedSpeed=app.selectedSpeed)
+
+    for i in range(len(circlePos)):
+        circle = circlePos[i]
+        x, y, r = circle[0], circle[1], circle[2]
+        if distance(mouseX, mouseY, x, y) <= r:
+            # Select that circle
+            app.selectedSpeed = [0.5, 1, 1.5, 2, 4][i]
+            app.stepsPerSecond = 10*app.selectedSpeed
+
+
 
     computePageRank = app.computePageRankButton
     computePageRankButton = computePageRank['Compute PageRank']
@@ -349,6 +410,8 @@ def onKeyPress(app, key):
         if key == 'd':
             app.graph.removeNode(app.selectedNode)
             app.selectedNode == None
+
+
 
 def main():
     runApp()
