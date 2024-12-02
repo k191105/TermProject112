@@ -6,6 +6,9 @@ import numpy as np
 import math
 
 def onAppStart(app):
+    resetApp(app)
+
+def resetApp(app):
     app.width = 1000
     app.height = 600
     app.graph = Graph()
@@ -56,17 +59,21 @@ def distance(x1, y1, x2, y2):
 ############################################################
 
 def start_redrawAll(app):
-    drawLabel('Welcome!', 200, 160, size=24, bold=True)
-    # Note: we can access app.highScore (and all app variables) from any screen
-    drawLabel(f'Welcome to PageRank Simulator', 200, 200, size=24)
-    drawLabel('Press space to begin!', 200, 240, size=16)
+
+    # Background Image -- Can make this more sophisticated.
+    imageWidth, imageHeight = getImageSize('welcomeImage.png')
+    drawImage('welcomeImage.png', app.width/2, app.height/2, align='center', opacity = 60, width=imageWidth*(4/5), height=imageHeight*(4/5))
+
+    drawLabel('Welcome!', app.width/2, app.height/2 - 50, size=24, bold=True)
+    drawLabel(f'Welcome to PageRank Simulator', app.width/2, app.height/2, size=32, font='Monteserrat', bold=True)
+    drawLabel('Press space to enter!', app.width/2, app.height/2 + 40, size=24)
 
 def start_onKeyPress(app, key):
     if key == 'space':
         setActiveScreen('sim')
 
 ############################################################
-# Game Screen
+# Simulation Screen
 ############################################################
 
 def sim_redrawAll(app):
@@ -479,6 +486,11 @@ def sim_onMouseRelease(app, mouseX, mouseY):
         app.lineEndLocation = None
 
 def sim_onKeyPress(app, key):
+    if key == 'r':
+        resetApp(app)
+        setActiveScreen('start')
+
+
     if app.selectedNode == None:
         return
     else:
@@ -487,6 +499,8 @@ def sim_onKeyPress(app, key):
             app.graph.removeNode(app.selectedNode)
             resetVisits(app)
             app.selectedNode = None
+    
+    
 
 def drawRanking(app):
     numNodes = len(app.graph.nodes)
