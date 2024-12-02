@@ -50,7 +50,26 @@ def returnButtons():
 def distance(x1, y1, x2, y2):
     return ((x1 - x2)**2 + (y1-y2)**2)**0.5
 
-def redrawAll(app):
+
+############################################################
+# Start Screen
+############################################################
+
+def start_redrawAll(app):
+    drawLabel('Welcome!', 200, 160, size=24, bold=True)
+    # Note: we can access app.highScore (and all app variables) from any screen
+    drawLabel(f'Welcome to PageRank Simulator', 200, 200, size=24)
+    drawLabel('Press space to begin!', 200, 240, size=16)
+
+def start_onKeyPress(app, key):
+    if key == 'space':
+        setActiveScreen('sim')
+
+############################################################
+# Game Screen
+############################################################
+
+def sim_redrawAll(app):
     # Main drawing including control panels
     width = app.width
 
@@ -80,7 +99,6 @@ def redrawAll(app):
     # Generate Random Graph Button
     generateRandomGraph = app.generateGraphButton
     generateRandomGraphButton = generateRandomGraph['Generate Random Graph']
-    gRGH = generateRandomGraphButton['height']
 
     drawCapsule(generateRandomGraphButton['x'], generateRandomGraphButton['y'], generateRandomGraphButton['width'], generateRandomGraphButton['height'], border='black', fill='burlyWood' if not app.simulationRunning else 'gainsboro')
     drawLabel(generateRandomGraphButton['label'], generateRandomGraphButton['x'] + generateRandomGraphButton['width']/2, generateRandomGraphButton['y'] + generateRandomGraphButton['height']/2, size=11)
@@ -114,7 +132,7 @@ def redrawAll(app):
     drawRanking(app)
 
 
-    drawCapsule(840, 530, 120, 50, border='black', fill='salmon')
+    drawCapsule(840, 530, 120, 50, border='black', fill='salmon' if not app.simulationRunning else 'gainsboro')
     drawLabel("Reset Scores", 900, 555, align='center', font='Symbols', size=12)
 
     # Just compute PageRank
@@ -204,7 +222,7 @@ def getLabel(index):
         last = chr((index % 26) + 65)
         return getLabel((index//26) - 1) + last   
 
-def onMousePress(app, mouseX, mouseY):
+def sim_onMousePress(app, mouseX, mouseY):
 
     # ------------------------------------------------------------------------------------------------------------------------------
 
@@ -361,7 +379,7 @@ def onMousePress(app, mouseX, mouseY):
 
     # ------------------------------------------------------------------------------------------------------------------------------
 
-def onStep(app):
+def sim_onStep(app):
     if app.simulationRunning:
         app.totalSteps += 1
         if len(app.graph.nodes) > 0:
@@ -415,7 +433,7 @@ def isInNode(app, mouseX, mouseY):
             return True
     return False
 
-def onMouseDrag(app, mouseX, mouseY):
+def sim_onMouseDrag(app, mouseX, mouseY):
 
     if app.mode == 'page_edit' and app.draggingNode == True:
         if app.selectedNode != None:
@@ -439,7 +457,7 @@ def onMouseDrag(app, mouseX, mouseY):
     elif app.mode == 'eraser':
         pass
 
-def onMouseRelease(app, mouseX, mouseY):
+def sim_onMouseRelease(app, mouseX, mouseY):
     if app.mode == 'page_edit' and app.draggingNode:
         app.draggingNode = False
     elif app.mode == 'link_edit' and app.draggingEdge:
@@ -460,7 +478,7 @@ def onMouseRelease(app, mouseX, mouseY):
         app.lineStartLocation = None
         app.lineEndLocation = None
 
-def onKeyPress(app, key):
+def sim_onKeyPress(app, key):
     if app.selectedNode == None:
         return
     else:
@@ -469,7 +487,6 @@ def onKeyPress(app, key):
             app.graph.removeNode(app.selectedNode)
             resetVisits(app)
             app.selectedNode = None
-
 
 def drawRanking(app):
     numNodes = len(app.graph.nodes)
@@ -494,7 +511,10 @@ def drawRanking(app):
         sortedVisits = [0] * numNodes
     else:
         labelToScore = {getLabel(i): app.visits[i] for i in range(numNodes)}
+        # Sorting method taken from StackOverflow: https://stackoverflow.com/questions/7340019/sort-values-and-return-list-of-keys-from-dict-python
         sortedNodeList = sorted(labelToScore, key=labelToScore.get, reverse=True)
+
+        # This is faster than sorting the list straight up: this is O(N); sorting would be O(NlogN)
         sortedVisits = [labelToScore[label] for label in sortedNodeList]
 
     for i in range(len(sortedNodeList)):
@@ -526,7 +546,7 @@ def resetVisits(app):
     app.visits = [0] * len(app.graph.nodes)
 
 def main():
-    runApp()
+    runAppWithScreens(initialScreen='start')
 
 main()
 
