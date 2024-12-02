@@ -113,6 +113,10 @@ def redrawAll(app):
 
     drawRanking(app)
 
+
+    drawCapsule(840, 530, 120, 50, border='black', fill='salmon')
+    drawLabel("Reset Scores", 900, 555, align='center', font='Symbols', size=12)
+
     # Just compute PageRank
     computePageRank = app.computePageRankButton
     computePageRankButton = computePageRank['Compute PageRank']
@@ -238,6 +242,7 @@ def onMousePress(app, mouseX, mouseY):
                 app.mode = 'page_edit'
                 app.visits = []
                 app.totalVisits = 0
+                app.surferIndex = None
                 return
 
             for other_key in app.buttons:
@@ -255,6 +260,7 @@ def onMousePress(app, mouseX, mouseY):
         generateRandomGraphButton['y'] <= mouseY <= generateRandomGraphButton['y'] + generateRandomGraphButton['height']):
             app.totalVisits= 0
             app.visits = []
+            app.surferIndex = None
             numNodes = random.randint(4, 12)
 
             generateEdgeProbability = random.uniform(0.08, 0.4)
@@ -309,17 +315,29 @@ def onMousePress(app, mouseX, mouseY):
         app.simulationRunning = not app.simulationRunning
 
         if app.simulationRunning:
-            app.surferIndex = random.randint(0, len(app.graph.nodes) - 1)  
-            app.visits = [0] * len(app.graph.nodes)
-            app.totalSteps = 0
+            try:
+                app.surferIndex = random.randint(0, len(app.graph.nodes) - 1)  
+                app.visits = [0] * len(app.graph.nodes)
+                app.totalSteps = 0
+            except:
+                pass
         return
     
 
     # ------------------------------------------------------------------------------------------------------------------------------
+    # CHeck if we're in the reset scores button
+
+    if 840 <= mouseX <= 960 and 530 <= mouseY <= 580:
+        resetVisits(app)
+        for i in range(len(app.graph.nodes)):
+            app.graph.nodes[i][2] = 20
+            app.surferIndex = None
+            
+
+    # ------------------------------------------------------------------------------------------------------------------------------
 
     
-    
-    # Check if we're in the control area
+    # Check we're not in the control area
     if not withinPlayArea(app, mouseX, mouseY):
         return
     
@@ -333,6 +351,7 @@ def onMousePress(app, mouseX, mouseY):
         else:
             nodeInformation = [mouseX, mouseY]
             app.graph.addNode(nodeInformation)
+            resetVisits(app)
     elif app.mode == 'link_edit':
         if i != None:
             app.draggingEdge = True
@@ -448,7 +467,8 @@ def onKeyPress(app, key):
         print(app.selectedNode)
         if key == 'd':
             app.graph.removeNode(app.selectedNode)
-            app.selectedNode == None
+            resetVisits(app)
+            app.selectedNode = None
 
 
 def drawRanking(app):
@@ -458,7 +478,7 @@ def drawRanking(app):
         return
 
     startX, endX = (4/5) * app.width, app.width
-    startY, endY = 70, 540
+    startY, endY = 70, 490
 
 
     if numNodes <= 1: 
@@ -479,7 +499,7 @@ def drawRanking(app):
 
     for i in range(len(sortedNodeList)):
         label = sortedNodeList[i]
-        if len(app.visits) == 0:
+        if len(sortedVisits) == 0:
             if spacing == None:
                 y = startY
             else:
@@ -502,7 +522,8 @@ def drawRanking(app):
             drawRect(startX + 60, y, standardLength + lengthToAdd, 20, fill='dodgerBlue')
             drawLabel(f"{pythonRound(numVisits/totalVisits, 3)}", startX + 60 + (standardLength + lengthToAdd)/2, y + 10)
 
-
+def resetVisits(app):
+    app.visits = [0] * len(app.graph.nodes)
 
 def main():
     runApp()

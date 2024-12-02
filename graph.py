@@ -1,5 +1,6 @@
 import numpy as np
 import random
+# from optimiseLayout import optimizeNodeLayout
 
 class Graph:
     def __init__(self):
@@ -63,6 +64,13 @@ class Graph:
                 self.addNode([x, y])
                 i += 1
         
+
+        # We can make this a lot more sophisticated. Idea: build a optimal layout such that nodes are as well spaced out as they can be. 
+        # Could use concepts from physics for this
+
+        # self.nodes = optimizeNodeLayout(self.nodes)
+
+
         for i in range(len(self.nodes)):
             for j in range(len(self.nodes)):
                 if i == j:
@@ -72,7 +80,7 @@ class Graph:
                     node2 = self.nodes[j]
                     self.addEdge(node1, node2)
                     
-                    
+
     def getTransitionMatrixForPageRank(self):
         numNodes = len(self.nodes)
 
