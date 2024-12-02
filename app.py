@@ -118,9 +118,9 @@ def sim_redrawAll(app):
     drawLabel("Speed:", 20, 300, align='left', size=12)
     drawSpeedBar(30, 320, 140, selectedSpeed=app.selectedSpeed)
 
-    drawLabel("Teleportation Probability:", 20, 360, align='left', size=12)
+    # drawLabel("Teleportation Probability:", 20, 360, align='left', size=12)
 
-    drawLabel("Change color on teleport?", 20, 380, align='left', size=12)
+    # drawLabel("Change color on teleport?", 20, 380, align='left', size=12)
 
     drawLine(20, 430, 180, 430)
 
