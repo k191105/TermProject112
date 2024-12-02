@@ -60,7 +60,6 @@ def drawSpeedBar(xStart, y, width, speeds=[0.5, 1, 1.5, 2, 4], selectedSpeed=Non
         drawCircle(x, y, r, fill=cFill, border='black')
 
         
-        
         drawLabel(f'{speed}x', x, y + 20, align='center', size=9)
         
 

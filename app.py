@@ -2,9 +2,8 @@ from cmu_graphics import *
 import random
 from graph import Graph
 from shapes import drawCapsule, drawSpeedBar, returnSpeedBarPos
-
-
-
+import numpy as np
+import math
 
 def onAppStart(app):
     app.width = 1000
@@ -29,7 +28,6 @@ def onAppStart(app):
     app.visits = []
     app.totalVisits = 0
     app.locked = False
-   
 
     app.computePageRankButton = {'Compute PageRank': {'id': 'compute_pagerank', 'label': 'Compute Pagerank', 'x': 50, 'y': 450, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
     app.runSimButton = {'Run Simulation': {'id': 'run_sim', 'label': 'Run Simulation', 'x': 50, 'y': 520, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
@@ -76,11 +74,6 @@ def redrawAll(app):
         else:
             drawCapsule(button['x'], button['y'], button['width'], button['height'], border='black', fill=button['fill'] if not app.simulationRunning else 'gainsboro')
         drawLabel(button['label'], button['x'] + button['width']/2, button['y'] + button['height']/2, size=12)
-    
-
-
-
-
 
     # drawLine(20, 200, 180, 200)
 
@@ -96,19 +89,29 @@ def redrawAll(app):
     drawLine(20, 260, 180, 260)
     drawLabel("Simulation Settings", 40, 280, font='Times New Roman', align='left', size=14, bold=True)
     
-
     # Speed BAR
-
     drawLabel("Speed:", 20, 300, align='left', size=12)
     drawSpeedBar(30, 320, 140, selectedSpeed=app.selectedSpeed)
 
+    drawLabel("Teleportation Probability:", 20, 360, align='left', size=12)
+
+    drawLabel("Change color on teleport?", 20, 380, align='left', size=12)
+
     drawLine(20, 430, 180, 430)
+
+    if not app.simulationRunning:
+        drawLabel("PageRank Simulator", 500, 30, size=21)
+    elif app.simulationRunning:
+        drawLabel("PageRank - Simulation Running", 500, 30, size=21)
+        drawLabel(f"Steps taken: {app.totalSteps}", 500, 50, size=12)
+
 
     # Right Panel:
 
     drawCapsule(830, 20, 140, 30, border='black', fill='whiteSmoke')
     drawLabel("🔍 Page Rankings", 830, 35, align='left', font='Symbols', size=12)
 
+    drawRanking(app)
 
     # Just compute PageRank
     computePageRank = app.computePageRankButton
@@ -150,6 +153,8 @@ def redrawAll(app):
             nodefill = 'lemonChiffon'
         else:
             nodefill = 'white'
+        
+        
         drawCircle(circleX, circleY, radius, border = 'black', fill=nodefill)
         drawLabel(getLabel(i), circleX, circleY, size=12)
    
@@ -196,6 +201,9 @@ def getLabel(index):
         return getLabel((index//26) - 1) + last   
 
 def onMousePress(app, mouseX, mouseY):
+
+    # ------------------------------------------------------------------------------------------------------------------------------
+
     if app.simulationRunning:
         runSim = app.runSimButton
         runSimButton = runSim['Run Simulation']
@@ -211,6 +219,11 @@ def onMousePress(app, mouseX, mouseY):
             return
         else:
             return
+    
+    
+    # ------------------------------------------------------------------------------------------------------------------------------
+
+
     # Control Panels mouse interaction
     for key in app.buttons:
         button = app.buttons[key]
@@ -222,7 +235,9 @@ def onMousePress(app, mouseX, mouseY):
 
             if app.mode == 'clear_all':
                 app.graph = Graph()
-                app.mode == 'page_edit'
+                app.mode = 'page_edit'
+                app.visits = []
+                app.totalVisits = 0
                 return
 
             for other_key in app.buttons:
@@ -230,13 +245,24 @@ def onMousePress(app, mouseX, mouseY):
                 other_button['activated'] = True if (other_key == key) else False
             return
     
+    # ------------------------------------------------------------------------------------------------------------------------------
+
     # Check if we're clicking in the generate random graph button:
     generateRandomGraph = app.generateGraphButton
     generateRandomGraphButton = generateRandomGraph['Generate Random Graph']
+
     if (generateRandomGraphButton['x'] <= mouseX <= generateRandomGraphButton['x'] + generateRandomGraphButton['width'] and 
         generateRandomGraphButton['y'] <= mouseY <= generateRandomGraphButton['y'] + generateRandomGraphButton['height']):
+            app.totalVisits= 0
+            app.visits = []
             numNodes = random.randint(4, 12)
-            generateEdgeProbability = random.uniform(0.05, 0.5)
+
+            generateEdgeProbability = random.uniform(0.08, 0.4)
+
+            # Better version: Use beta distribution to return biased probability:
+            # TODO NOT WORKING:
+            # randomNum = np.random.beta(2, 5)
+            # generateEdgeProbability = 0.1 + (0.7 - 0.1) * randomNum
 
             # Get play area bounds
             width, height = app.width, app.height
@@ -245,6 +271,8 @@ def onMousePress(app, mouseX, mouseY):
 
             playArea = [startX, endX, startY, endY]
             app.graph.generateRandomGraph(playArea, numNodes = numNodes, generateEdgeProbability = generateEdgeProbability)
+
+    # ------------------------------------------------------------------------------------------------------------------------------
 
     # Need to check if we're changing the speed:
     circlePos = returnSpeedBarPos(30, 320, 140, selectedSpeed=app.selectedSpeed)
@@ -258,6 +286,8 @@ def onMousePress(app, mouseX, mouseY):
             app.stepsPerSecond = 10*app.selectedSpeed
 
 
+    # ------------------------------------------------------------------------------------------------------------------------------
+
 
     computePageRank = app.computePageRankButton
     computePageRankButton = computePageRank['Compute PageRank']
@@ -266,6 +296,9 @@ def onMousePress(app, mouseX, mouseY):
     if computePageRankButton['x'] <= mouseX <= computePageRankButton['x'] + computePageRankButton['width'] and computePageRankButton['y'] <= mouseY <= computePageRankButton['y'] + computePageRankButton['height']:
         app.graph.computePagerank()
     
+
+    # ------------------------------------------------------------------------------------------------------------------------------
+
 
     runSim = app.runSimButton
     runSimButton = runSim['Run Simulation']
@@ -280,6 +313,10 @@ def onMousePress(app, mouseX, mouseY):
             app.visits = [0] * len(app.graph.nodes)
             app.totalSteps = 0
         return
+    
+
+    # ------------------------------------------------------------------------------------------------------------------------------
+
     
     
     # Check if we're in the control area
@@ -302,6 +339,8 @@ def onMousePress(app, mouseX, mouseY):
             app.selectedNode = i
             app.lineStartLocation = app.graph.nodes[i][:2]
             app.lineEndLocation = None
+
+    # ------------------------------------------------------------------------------------------------------------------------------
 
 def onStep(app):
     if app.simulationRunning:
@@ -410,6 +449,58 @@ def onKeyPress(app, key):
         if key == 'd':
             app.graph.removeNode(app.selectedNode)
             app.selectedNode == None
+
+
+def drawRanking(app):
+    numNodes = len(app.graph.nodes)
+
+    if numNodes == 0:
+        return
+
+    startX, endX = (4/5) * app.width, app.width
+    startY, endY = 70, 540
+
+
+    if numNodes <= 1: 
+        spacing = None
+    else:
+        spacing = (endY - startY)/(numNodes - 1)
+        spacing = min(spacing, 50)
+    
+    standardLength = 50
+
+    if len(app.visits) == 0:
+        sortedNodeList = [getLabel(i) for i in range(numNodes)]
+        sortedVisits = [0] * numNodes
+    else:
+        labelToScore = {getLabel(i): app.visits[i] for i in range(numNodes)}
+        sortedNodeList = sorted(labelToScore, key=labelToScore.get, reverse=True)
+        sortedVisits = [labelToScore[label] for label in sortedNodeList]
+
+    for i in range(len(sortedNodeList)):
+        label = sortedNodeList[i]
+        if len(app.visits) == 0:
+            if spacing == None:
+                y = startY
+            else:
+                y = startY + i*spacing
+            
+            drawCircle(832, y + 10, 15, fill=None, border='black')
+            drawLabel(label, 832, y + 10)
+            drawRect(startX + 60, y, standardLength, 20, fill='dodgerBlue')
+        else:
+            if spacing == None:
+                y = startY
+            else:
+                y = startY + i*spacing
+            numVisits = sortedVisits[i]
+            totalVisits = sum(sortedVisits) if sum(sortedVisits) > 0 else 1
+            # lengthToAdd = math.log(numVisits + 1) / math.log(totalVisits + 1) * 50
+            lengthToAdd = (numVisits/totalVisits)*50
+            drawCircle(832, y + 10, 15, fill=None, border='black')
+            drawLabel(label, 832, y + 10)
+            drawRect(startX + 60, y, standardLength + lengthToAdd, 20, fill='dodgerBlue')
+            drawLabel(f"{pythonRound(numVisits/totalVisits, 3)}", startX + 60 + (standardLength + lengthToAdd)/2, y + 10)
 
 
 

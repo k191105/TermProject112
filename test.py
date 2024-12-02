@@ -350,8 +350,58 @@ def onKeyPress(app, key):
             app.graph.removeNode(app.selectedNode)
             app.selectedNode == None
 
+
+# old DrawRanking
+
+
+
+def drawRanking(app):
+    numNodes = len(app.graph.nodes)
+
+    if numNodes == 0:
+        return
+
+    startX, endX = (4/5) * app.width, app.width
+    startY, endY = 70, 540
+
+
+    if numNodes <= 1: 
+        spacing = None
+    else:
+        spacing = (endY - startY)/(numNodes - 1)
+        spacing = min(spacing, 50)
+    # Calculate the spacing between different speed options
+
+    # labelToScore = {getLabel(i): app.visits[i] for i in range(numNodes)
+    
+    standardLength = 50
+    for i in range(numNodes):
+        label = getLabel(i)
+        if len(app.visits) == 0:
+            if spacing == None:
+                y = startY
+            else:
+                y = startY + i*spacing
+            
+            drawCircle(832, y + 10, 15, fill=None, border='black')
+            drawLabel(label, 832, y + 10)
+            drawRect(startX + 60, y, standardLength, 20, fill='dodgerBlue')
+        else:
+            if spacing == None:
+                y = startY
+            else:
+                y = startY + i*spacing
+            numVisits = app.visits[i]
+            totalVisits = sum(app.visits) if sum(app.visits) > 0 else 1
+            # lengthToAdd = math.log(numVisits + 1) / math.log(totalVisits + 1) * 50
+            lengthToAdd = (numVisits/totalVisits)*50
+            drawCircle(832, y + 10, 15, fill=None, border='black')
+            drawLabel(label, 832, y + 10)
+            drawRect(startX + 60, y, standardLength + lengthToAdd, 20, fill='dodgerBlue')
+
 def main():
     runApp()
+
 
 main()
 

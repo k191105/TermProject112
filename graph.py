@@ -72,9 +72,7 @@ class Graph:
                     node2 = self.nodes[j]
                     self.addEdge(node1, node2)
                     
-
-
-
+                    
     def getTransitionMatrixForPageRank(self):
         numNodes = len(self.nodes)
 
@@ -115,6 +113,8 @@ class Graph:
         # Update the radius for each node based on the final PageRank values
         for i in range(num_nodes):
             self.nodes[i][2] = 20 + pagerank[i] * 100
+        
+
 
     def takeRandomSurferStep(self, currentNode, dampingFactor = 0.85):
         numNodes = len(self.nodes)

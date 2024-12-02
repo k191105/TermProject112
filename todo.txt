@@ -1,6 +1,18 @@
 
 Add start scren and make switching between screens possible
+
+
 Add PageRanking results on right panel (search bar: 🔍 Page Rankings)
+
+        Need to order nodes by ranking somehow. 
+        app.visits stores number of visits per node: matches with app.graph.nodes
+        - Create dictionary mapping node labels to number of visits
+
+
+
+
+
+
 Make Buttons Capsules instead of Rectangles -- define a new shape using simpleNameSpace? DONE
 Make results update continuously
 Make eraser work
@@ -9,4 +21,6 @@ Allow user control over simulation settings DONE
 Add information like iterations done etc.
 Add instructions on main panel before anything is on there
 Show random surfer also traversing edges
-Generate Random Network Button
+Generate Random Network Button DONE
+
+
