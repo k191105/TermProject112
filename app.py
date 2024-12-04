@@ -25,11 +25,16 @@ def resetApp(app):
 
     app.otherSelectedNode = None
     app.surferIndex = None
+    app.surferTravel = []
+    app.surferProgress = 0
+    app.surferMoving = False
+    app.surferOnEdge = None
 
     app.simulationRunning = False
     app.stepsPerSecond = 10
     app.visits = []
     app.totalVisits = 0
+    app.totalSteps = 0
     app.locked = False
 
     app.computePageRankButton = {'Compute PageRank': {'id': 'compute_pagerank', 'label': 'Compute Pagerank', 'x': 50, 'y': 450, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
@@ -82,8 +87,16 @@ def sim_redrawAll(app):
 
     startX, endX = (1/5)*width, (4/5)*width
 
+
+
+    if app.simulationRunning:
+        drawRect(200, 0, 600, 600, fill='white')
+        drawRect(0, 0, 200, 600, fill=rgb(249, 250, 250))
+        drawRect(800, 0, 200, 600, fill=rgb(249, 250, 250))
+        
     drawLine(startX, 0, startX, app.height)
     drawLine(endX, 0, endX, app.height)
+
     
     drawLabel("Network Design", 100, 20, font='Times New Roman', align='center', size=14, bold=True)
     # Draw Buttons
@@ -116,7 +129,7 @@ def sim_redrawAll(app):
     
     # Speed BAR
     drawLabel("Speed:", 20, 300, align='left', size=12)
-    drawSpeedBar(30, 320, 140, selectedSpeed=app.selectedSpeed)
+    drawSpeedBar(30, 320, 140, selectedSpeed=app.selectedSpeed, appRunning=app.simulationRunning)
 
     # drawLabel("Teleportation Probability:", 20, 360, align='left', size=12)
 
@@ -166,6 +179,7 @@ def sim_redrawAll(app):
     drawLabel(runStopLabel, runSimButton['x'] + runSimButton['width']/2, runSimButton['y'] + runSimButton['height']/2, size=12, bold=True)
 
 
+
     # Drawing pre-existing edges
     drawDirectionalLinks(app)
 
@@ -201,6 +215,8 @@ def drawDirectionalLinks(app):
                 if app.graph.adjacency_matrix[i][j] == 1:
                     currNode = app.graph.nodes[i]
                     nextNode = app.graph.nodes[j]
+
+
                     
                     x1, y1, r1 = currNode[0], currNode[1], rounded(currNode[2])
                     x2, y2, r2 = nextNode[0], nextNode[1], rounded(nextNode[2])
@@ -219,7 +235,19 @@ def drawDirectionalLinks(app):
                     startX, startY = x1 + r1 * ux, y1 + r1 * uy
                     endX, endY = x2 - r2 * ux, y2 - r2 * uy
                     
-                    drawLine(startX, startY, endX, endY, fill='blue', arrowEnd=True)
+                    if (i, j) == app.surferOnEdge:
+                        eFill = 'gold'
+                    else:
+                        eFill = 'dodgerBlue'
+
+
+                    drawLine(startX, startY, endX, endY, fill=eFill, arrowEnd=True)
+
+                    # # Draw the surfer moving -- calculation aided by ChatGPT
+                    # if app.surferMoving and (i, j) == app.currentEdge:
+                    #     progressX = startX + (endX - startX) * app.surferProgress
+                    #     progressY = startY + (endY - startY) * app.surferProgress
+                    #     drawCircle(progressX, progressY, 8, fill='gold', border='black')
 
 def getLabel(index):
     if index < 0:
@@ -288,12 +316,12 @@ def sim_onMousePress(app, mouseX, mouseY):
             app.surferIndex = None
             numNodes = random.randint(4, 12)
 
-            generateEdgeProbability = random.uniform(0.08, 0.4)
+            generateEdgeProbability = random.uniform(0.15, 0.4)
 
             # Better version: Use beta distribution to return biased probability:
-            # TODO NOT WORKING:
-            # randomNum = np.random.beta(2, 5)
-            # generateEdgeProbability = 0.1 + (0.7 - 0.1) * randomNum
+            # TODO NOT WORKING: FIXED
+            randomNum = np.random.beta(2, 5)
+            generateEdgeProbability = 0.1 + (0.7-0.1)*randomNum
 
             # Get play area bounds
             width, height = app.width, app.height
@@ -316,9 +344,7 @@ def sim_onMousePress(app, mouseX, mouseY):
             app.selectedSpeed = [0.5, 1, 1.5, 2, 4][i]
             app.stepsPerSecond = 10*app.selectedSpeed
 
-
     # ------------------------------------------------------------------------------------------------------------------------------
-
 
     computePageRank = app.computePageRankButton
     computePageRankButton = computePageRank['Compute PageRank']
@@ -343,7 +369,9 @@ def sim_onMousePress(app, mouseX, mouseY):
             try:
                 app.surferIndex = random.randint(0, len(app.graph.nodes) - 1)  
                 app.visits = [0] * len(app.graph.nodes)
+                app.selectedNode = None
                 app.totalSteps = 0
+                app.surferMoving = False
             except:
                 pass
         return
@@ -351,7 +379,6 @@ def sim_onMousePress(app, mouseX, mouseY):
 
     # ------------------------------------------------------------------------------------------------------------------------------
     # CHeck if we're in the reset scores button
-
     if 840 <= mouseX <= 960 and 530 <= mouseY <= 580:
         resetVisits(app)
         for i in range(len(app.graph.nodes)):
@@ -360,7 +387,6 @@ def sim_onMousePress(app, mouseX, mouseY):
             
 
     # ------------------------------------------------------------------------------------------------------------------------------
-
     
     # Check we're not in the control area
     if not withinPlayArea(app, mouseX, mouseY):
@@ -389,12 +415,16 @@ def sim_onMousePress(app, mouseX, mouseY):
 def sim_onStep(app):
     if app.simulationRunning:
         app.totalSteps += 1
+
         if len(app.graph.nodes) > 0:
             currentNode = app.surferIndex
             nextNode = app.graph.takeRandomSurferStep(currentNode)
 
             # Add that we've visited this node once
             app.visits[nextNode] += 1
+
+            app.surferOnEdge = (currentNode, nextNode)
+
 
             # Change current surferIndex to be the next node given by takeRandomSurferStep
             app.surferIndex = nextNode
@@ -408,9 +438,10 @@ def sim_onStep(app):
 
             for i in range(numNodes):
                 # Change radius continuously
-                app.graph.nodes[i][2] = app.R + ((app.visits[i]/totalVisits) * 100)
-
-        
+                try:
+                    app.graph.nodes[i][2] = app.R + ((app.visits[i]/totalVisits) * 100)
+                except:
+                    pass
         if app.totalSteps >= 1000:
             app.simulationRunning = False
 
@@ -490,7 +521,6 @@ def sim_onKeyPress(app, key):
         resetApp(app)
         setActiveScreen('start')
 
-
     if app.selectedNode == None:
         return
     else:
@@ -498,9 +528,7 @@ def sim_onKeyPress(app, key):
         if key == 'd':
             app.graph.removeNode(app.selectedNode)
             resetVisits(app)
-            app.selectedNode = None
-    
-    
+            app.selectedNode = None  
 
 def drawRanking(app):
     numNodes = len(app.graph.nodes)
@@ -549,8 +577,8 @@ def drawRanking(app):
                 y = startY + i*spacing
             numVisits = sortedVisits[i]
             totalVisits = sum(sortedVisits) if sum(sortedVisits) > 0 else 1
-            # lengthToAdd = math.log(numVisits + 1) / math.log(totalVisits + 1) * 50
-            lengthToAdd = (numVisits/totalVisits)*50
+            lengthToAdd = math.log(numVisits + 1) / math.log(totalVisits + 1) * 50
+            lengthToAddlabel = (numVisits/totalVisits)*50
             drawCircle(832, y + 10, 15, fill=None, border='black')
             drawLabel(label, 832, y + 10)
             drawRect(startX + 60, y, standardLength + lengthToAdd, 20, fill='dodgerBlue')

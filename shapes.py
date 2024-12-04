@@ -27,7 +27,7 @@ def drawCapsule(x, y, width, height, border='black', fill=None):
     drawLine(x, y+height, x+width, y+height)
 
 
-def drawSpeedBar(xStart, y, width, speeds=[0.5, 1, 1.5, 2, 4], selectedSpeed=None):
+def drawSpeedBar(xStart, y, width, speeds=[0.5, 1, 1.5, 2, 4], selectedSpeed=None, appRunning=False):
     numSpeeds = len(speeds)
     drawLine(xStart, y, xStart + width, y)
 
@@ -53,6 +53,8 @@ def drawSpeedBar(xStart, y, width, speeds=[0.5, 1, 1.5, 2, 4], selectedSpeed=Non
         if speed == selectedSpeed:
             cFill = interpolate_color(speed, lowerBound, upperBound, start_color, end_color)
             r = 9
+            if appRunning:
+                cFill='gainsboro'
         else:
             cFill = 'white'
             r = 6

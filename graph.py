@@ -1,6 +1,6 @@
 import numpy as np
 import random
-# from optimiseLayout import optimizeNodeLayout
+from optimiseLayout import optimizeNodeLayout
 
 class Graph:
     def __init__(self):
@@ -41,6 +41,7 @@ class Graph:
             self.adjacency_matrix[node1Index][node2Index] = 1
 
             self.edges.append([node1, node2])
+    
     def removeNode(self, i):
         
         self.nodes.pop(i)
@@ -68,7 +69,7 @@ class Graph:
         # We can make this a lot more sophisticated. Idea: build a optimal layout such that nodes are as well spaced out as they can be. 
         # Could use concepts from physics for this
 
-        # self.nodes = optimizeNodeLayout(self.nodes)
+        self.nodes = optimizeNodeLayout(self.nodes)
 
 
         for i in range(len(self.nodes)):
