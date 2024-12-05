@@ -45,6 +45,8 @@ def resetApp(app):
     app.speedCirclesPos = []
     app.selectedSpeed = 1
 
+    app.eraserPath = []
+
 def returnButtons():
     d = {
         'Edit Pages': {'id': 'page_edit', 'label': 'Edit Pages', 'x': 40, 'y': 40, 'width': 120, 'height': 40, 'activated': True, 'fill': None},
@@ -207,6 +209,14 @@ def sim_redrawAll(app):
         x1, y1 = app.lineEndLocation
         drawLine(x0, y0, x1, y1, dashes=app.draggingEdge, fill='blue', arrowEnd=True)
 
+
+    # Draw eraser if we're erasing something:
+    if app.mode == 'eraser':
+        for i in range(len(app.eraserPath) - 1):
+            x1, y1 = app.eraserPath[i]
+            x2, y2 = app.eraserPath[i + 1]
+            drawLine(x1, y1, x2, y2, fill='red', dashes=True, lineWidth=6)
+
 def drawDirectionalLinks(app):
     n = len(app.graph.nodes)
     if n > 0:
@@ -297,6 +307,10 @@ def sim_onMousePress(app, mouseX, mouseY):
                 app.totalVisits = 0
                 app.surferIndex = None
                 return
+            if app.mode == 'eraser':
+                app.eraserPath = [(mouseX, mouseY)]
+
+        
 
             for other_key in app.buttons:
                 other_button = app.buttons[other_key]
@@ -493,7 +507,7 @@ def sim_onMouseDrag(app, mouseX, mouseY):
     
     #TODO implement eraser
     elif app.mode == 'eraser':
-        pass
+        app.eraserPath.append((mouseX, mouseY))
 
 def sim_onMouseRelease(app, mouseX, mouseY):
     if app.mode == 'page_edit' and app.draggingNode:
@@ -515,6 +529,103 @@ def sim_onMouseRelease(app, mouseX, mouseY):
         app.otherSelectedNode = None
         app.lineStartLocation = None
         app.lineEndLocation = None
+    elif app.mode == 'eraser':
+        app.eraserPath.append((mouseX, mouseY))
+        drawAndRunEraser(app)
+        app.eraserPath = []
+
+
+def drawAndRunEraser(app):
+    # Delete Nodes
+    # NEed to use while loop cos modifying list
+    i = 0  
+    while i < len(app.graph.nodes):  
+        nodeX, nodeY, nodeR = app.graph.nodes[i][0], app.graph.nodes[i][1], app.graph.nodes[i][2]
+        nodeRemoved = False
+        for point in app.eraserPath:
+            pointX, pointY = point[0], point[1]
+            if distance(nodeX, nodeY, pointX, pointY) <= nodeR:
+                app.graph.removeNode(i)
+                nodeRemoved = True
+                break
+        if not nodeRemoved:
+            i += 1 
+
+    # Delete Edges TODO
+    '''
+    Plan:
+
+    Realise that there's a line segment in between two points. This can be deduced. Now we can flip the last problem to solve this one:
+    We find the line segment. Then we realise the eraser path is really made of a bunch of circles centered at path coordinates and we can say with radius 1
+    Then, if the line segments and any of these circles intersect, we can delete that edge using app.graph.removeEdge
+
+    '''
+
+    for i in range(len(app.graph.nodes)):
+        for j in range(len(app.graph.nodes)):
+            if i == j:
+                continue
+            node1, node2 = app.graph.nodes[i], app.graph.nodes[j]
+            x1, y1 = node1[0], node1[1]
+            x2, y2 = node2[0], node2[1]
+
+            # Loop over each 'circle' in the eraser path:
+            for k in range(len(app.eraserPath)):
+                eraserCircle = app.eraserPath[k]
+                # Do some vector calc to find whether the line and circle intersect
+                if vectorAndCircleIntersect([x1, y1], [x2, y2], eraserCircle):
+                    print("Found edge to delete")
+                    app.graph.adjacency_matrix[i][j] = 0
+        
+def vectorAndCircleIntersect(node1Information, node2Information, eraserCircle):
+    x1, y1 = node1Information
+    x2, y2 = node2Information
+    cx, cy = eraserCircle
+
+    '''Since we're looking at a line segment, we need some parametric equations: 
+    x = x1 + (x2 - x1)*t 
+    y = y1 + (y2 - y1)*t 
+
+    Is linear so parameter is same. t from 0 to 1
+
+    equation of circle is (cx - x)**2 + (cy-y)**2 = r**2
+
+    We just need to confirm that x, y for any of our parameter values fall within the circle. Thus, we consider t from 0 to 1 and check if LHS <= RHS anywhere 
+    ^^ Too slow
+
+    Instead, solve:
+
+    Substitute x, y in equation
+    
+    [(cx - x1) + (x2 - x1)(t)]**2 + [(cy - y1) + (y2 - y1)(t)]**2 = r**2
+
+    Get quadratic at**2 + bt + c. Use discriminant to find solutions
+    '''
+
+    dx, dy = x2-x1, y2-y1
+    fx, fy = cx - x1, cy - y1
+
+    # After expansion, coefficients can be found (Note: I used ChatGPT for expansion)
+    a = dx**2 + dy**2
+    b = -2*(fx * dx + fy * dy)
+    c = fx**2 + fy**2 - 6**2
+
+    # Use discriminant of quadratic to find answer:
+
+    disc = b**2 - 4 * a * c
+
+    if disc < 0:
+        return False
+    
+    # Find values of t: (-b +- sqrt(disc))/2
+    t1 = (-b + math.sqrt(disc))/(2*a)
+    t2 = (-b - math.sqrt(disc))/(2*a)
+
+    if (0 <= t1 <= 1) or (0 <= t2 <= 1):
+        return True
+    else:
+        return False
+    
 
 def sim_onKeyPress(app, key):
     if key == 'r':

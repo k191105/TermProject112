@@ -40,7 +40,7 @@ class Graph:
             
             self.adjacency_matrix[node1Index][node2Index] = 1
 
-            self.edges.append([node1, node2])
+            self.edges.append([node1Index, node2Index])
     
     def removeNode(self, i):
         
