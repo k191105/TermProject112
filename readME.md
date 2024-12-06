@@ -16,4 +16,4 @@ Shortcut Commands:
 
 1. Space button: Press the space button to start the simulator when on the start screen;
 2. 'r': press r to return to start screen and reset all settings, graphs and data;
-3. 'd' press d to delete any node while selected.
+3. 'd' or 'backspace': press d or backspace to delete any node while selected.

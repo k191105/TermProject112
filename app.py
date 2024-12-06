@@ -13,7 +13,7 @@ def onAppStart(app):
     # Generate a random graph right away on start screen
     playArea = [0, app.width, 0, app.height]
 
-    app.graph.generateRandomGraph(playArea, numNodes=8, generateEdgeProbability=0.3)
+    app.graph.generateRandomGraph(playArea, numNodes=12, generateEdgeProbability=0.3)
     if len(app.graph.nodes) > 0:
         app.surferIndex = random.randint(0, len(app.graph.nodes)-1)
         app.visits = [0]*len(app.graph.nodes)
@@ -53,8 +53,8 @@ def resetApp(app):
     app.computePageRankButton = {'Compute PageRank': {'id': 'compute_pagerank', 'label': 'Compute Pagerank', 'x': 50, 'y': 450, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
     app.runSimButton = {'Run Simulation': {'id': 'run_sim', 'label': 'Run Simulation', 'x': 50, 'y': 520, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
     app.stopSimButton = {'Stop Simulation': {'id': 'stop_sim', 'label': 'Stop Simulation', 'x': 50, 'y': 520, 'width': 100, 'height': 60, 'activated': False}}
-    app.generateGraphButton = {'Generate Random Graph': {'id': 'generate_random', 'label': 'Generate Random Network', 'x': 46, 'y': 190, 'width': 108, 'height': 60, 'activated': False}}
-    app.optimiseLayoutButton = { 'Optimise Layout': {'id': 'optimize_layout','label': 'Optimize Layout', 'x': 40, 'y': 360, 'width': 120, 'height': 40, 'activated': False, 'fill': 'lightGreen'}}
+    app.generateGraphButton = {'Generate Random Graph': {'id': 'generate_random', 'label': 'Generate Random Network', 'x': 50, 'y': 190, 'width': 100, 'height': 60, 'activated': False}}
+    app.optimiseLayoutButton = { 'Optimise Layout': {'id': 'optimize_layout','label': 'Optimize Layout', 'x': 45, 'y': 360, 'width': 110, 'height': 50, 'activated': False, 'fill': 'lightGreen'}}
     app.speedCirclesPos = []
     app.selectedSpeed = 1
 
@@ -64,7 +64,7 @@ def returnButtons():
     d = {
         'Edit Pages': {'id': 'page_edit', 'label': 'Edit Pages', 'x': 40, 'y': 40, 'width': 120, 'height': 40, 'activated': True, 'fill': None},
         'Edit Links': {'id': 'link_edit', 'label': 'Edit Links', 'x': 40, 'y': 90, 'width': 120, 'height': 40, 'activated': False, 'fill': None},
-        'Eraser': {'id': 'eraser', 'label': '⌫', 'x': 40, 'y': 140, 'width': 15, 'height': 40, 'activated': False, 'fill': None},
+        'Eraser': {'id': 'eraser', 'label': '←', 'x': 40, 'y': 140, 'width': 15, 'height': 40, 'activated': False, 'fill': None},
         'Clear All': {'id': 'clear_all', 'label': 'Clear All', 'x': 100, 'y': 140, 'width': 60, 'height': 40, 'activated': False, 'fill': 'crimson'}
     }
 
@@ -188,7 +188,7 @@ def sim_redrawAll(app):
     # Right Panel:
 
     drawCapsule(830, 20, 140, 30, border='black', fill='whiteSmoke')
-    drawLabel("🔍 Page Rankings", 830, 35, align='left', font='Symbols', size=12)
+    drawLabel("🔍 Page Rankings", 830, 35, align='left', font='symbols', size=12)
 
     drawRanking(app)
 
@@ -367,6 +367,7 @@ def sim_onMousePress(app, mouseX, mouseY):
             app.totalVisits= 0
             app.visits = []
             app.surferIndex = None
+            app.surferOnEdge = None
             numNodes = random.randint(4, 12)
 
             generateEdgeProbability = random.uniform(0.15, 0.4)
@@ -683,7 +684,7 @@ def sim_onKeyPress(app, key):
         return
     else:
         print(app.selectedNode)
-        if key == 'd' and key == 'backspace':
+        if key == 'd' or key == 'backspace':
             app.graph.removeNode(app.selectedNode)
             resetVisits(app)
             app.selectedNode = None  
@@ -707,16 +708,17 @@ def drawRanking(app):
     
     standardLength = 50
 
+
     if len(app.visits) == 0:
-        sortedNodeList = [getLabel(i) for i in range(numNodes)]
-        sortedVisits = [(app.graph.nodes[i][2] - 20)/100 for i in range(numNodes)]
+        labelToScore = {getLabel(i): (app.graph.nodes[i][2] - 20) / 100 for i in range(numNodes)}
     else:
         labelToScore = {getLabel(i): app.visits[i] for i in range(numNodes)}
-        # Sorting method taken from StackOverflow: https://stackoverflow.com/questions/7340019/sort-values-and-return-list-of-keys-from-dict-python
-        sortedNodeList = sorted(labelToScore, key=labelToScore.get, reverse=True)
 
-        # This is faster than sorting the list straight up: this is O(N); sorting would be O(NlogN)
-        sortedVisits = [labelToScore[label] for label in sortedNodeList]
+    # Sorting method taken from StackOverflow: https://stackoverflow.com/questions/7340019/sort-values-and-return-list-of-keys-from-dict-python
+    sortedNodeList = sorted(labelToScore, key=labelToScore.get, reverse=True)
+
+    # This is faster than sorting the list straight up: this is O(N); sorting would be O(NlogN)
+    sortedVisits = [labelToScore[label] for label in sortedNodeList]
 
     for i in range(len(sortedNodeList)):
         label = sortedNodeList[i]
@@ -737,11 +739,11 @@ def drawRanking(app):
             numVisits = sortedVisits[i]
             totalVisits = sum(sortedVisits) if sum(sortedVisits) > 0 else 1
             lengthToAdd = math.log(numVisits + 1) / math.log(totalVisits + 1) * 50
-            lengthToAddlabel = (numVisits/totalVisits)*50
+            # lengthToAdd = (numVisits/totalVisits)*50
             drawCircle(832, y + 10, 15, fill=None, border='black')
             drawLabel(label, 832, y + 10)
-            drawRect(startX + 60, y, standardLength + lengthToAdd, 20, fill='dodgerBlue')
-            drawLabel(f"{pythonRound(numVisits/totalVisits, 3)}", startX + 60 + (standardLength + lengthToAdd)/2, y + 10)
+            drawRect(startX + 60, y, (standardLength + lengthToAdd), 20, fill='dodgerBlue')
+            drawLabel(f"{pythonRound(lengthToAdd/50, 3)}", startX + 60 + (standardLength + lengthToAdd)/2, y + 10)
 
 
 def resetVisits(app):
