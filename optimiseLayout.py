@@ -1,6 +1,6 @@
 import math
 
-def optimizeNodeLayout(nodes, k=1000000, scalingFactor=0.08):
+def optimizeNodeLayout(nodes, playArea=[200, 800, 60, 600], k=1000000, scalingFactor=0.08):
 
     # Use coulomb's law. Idea is to model each node as a proton and each edge as a spring. Then can use Coulomb's law to calculate repuslive force and can use Hooke's law to calculate tension on edges.
     # See Fruchterman-Reingold Algorithm
@@ -84,8 +84,9 @@ def optimizeNodeLayout(nodes, k=1000000, scalingFactor=0.08):
             nodes[i][1] += dy
 
             # Make sure new positions are within playarea. Logic here was helped by chatgpt
-            nodes[i][0] = min(max(nodes[i][0], 240), 760)
-            nodes[i][1] = min(max(nodes[i][1], 80), 540)
+            startX, endX, startY, endY = playArea
+            nodes[i][0] = min(max(nodes[i][0], startX + 40), endX - 40)
+            nodes[i][1] = min(max(nodes[i][1], startY + 20), endY - 60)
 
 
         scalingFactor *= 0.9

@@ -39,7 +39,6 @@ class Graph:
                 return
             
             self.adjacency_matrix[node1Index][node2Index] = 1
-
             self.edges.append([node1Index, node2Index])
     
     def removeNode(self, i):
@@ -69,7 +68,7 @@ class Graph:
         # We can make this a lot more sophisticated. Idea: build a optimal layout such that nodes are as well spaced out as they can be. 
         # Could use concepts from physics for this
 
-        self.nodes = optimizeNodeLayout(self.nodes)
+        self.nodes = optimizeNodeLayout(self.nodes, playArea)
 
 
         for i in range(len(self.nodes)):
@@ -109,8 +108,11 @@ class Graph:
         transition_matrix = self.getTransitionMatrixForPageRank()
         num_nodes = len(self.nodes)
 
-        # give equal 
-        pagerank = np.array([1.0 / num_nodes] * num_nodes)
+        # give equal pagerank values
+        try:
+            pagerank = np.array([1.0 / num_nodes] * num_nodes)
+        except:
+            return
 
 
         # Straight up calculation of PageRank using power iteration and pagerank formula
@@ -124,18 +126,18 @@ class Graph:
             self.nodes[i][2] = 20 + pagerank[i] * 100
         
 
-
     def takeRandomSurferStep(self, currentNode, dampingFactor = 0.85):
         numNodes = len(self.nodes)
         if numNodes == 0:
             return currentNode
         
+        if currentNode is None or currentNode < 0 or currentNode >= numNodes:
+            currentNode = random.randint(0, numNodes - 1)
         if random.random() <= dampingFactor:
             outLinks = []
             for i in range(numNodes):
                 if self.adjacency_matrix[currentNode][i] == 1:
                     outLinks.append(i)
-            
             if outLinks == []:
                 nextNode = random.randint(0, numNodes - 1)
                 # TODO Change color
@@ -146,4 +148,3 @@ class Graph:
             nextNode = random.randint(0, numNodes - 1)
         
         return nextNode
-

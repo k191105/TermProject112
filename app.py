@@ -4,9 +4,22 @@ from graph import Graph
 from shapes import drawCapsule, drawSpeedBar, returnSpeedBarPos
 import numpy as np
 import math
+from optimiseLayout import optimizeNodeLayout
+
 
 def onAppStart(app):
     resetApp(app)
+
+    # Generate a random graph right away on start screen
+    playArea = [0, app.width, 0, app.height]
+
+    app.graph.generateRandomGraph(playArea, numNodes=8, generateEdgeProbability=0.3)
+    if len(app.graph.nodes) > 0:
+        app.surferIndex = random.randint(0, len(app.graph.nodes)-1)
+        app.visits = [0]*len(app.graph.nodes)
+        app.simulationRunning = True
+
+    setActiveScreen('start')
 
 def resetApp(app):
     app.width = 1000
@@ -40,8 +53,8 @@ def resetApp(app):
     app.computePageRankButton = {'Compute PageRank': {'id': 'compute_pagerank', 'label': 'Compute Pagerank', 'x': 50, 'y': 450, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
     app.runSimButton = {'Run Simulation': {'id': 'run_sim', 'label': 'Run Simulation', 'x': 50, 'y': 520, 'width': 100, 'height': 60, 'activated': False, 'fill': 'cyan'}}
     app.stopSimButton = {'Stop Simulation': {'id': 'stop_sim', 'label': 'Stop Simulation', 'x': 50, 'y': 520, 'width': 100, 'height': 60, 'activated': False}}
-    app.generateGraphButton = {'Generate Random Graph': {'id': 'generate_random', 'label': 'Generate Random Network', 'x': 40, 'y': 200, 'width': 120, 'height': 40, 'activated': False}}
-    
+    app.generateGraphButton = {'Generate Random Graph': {'id': 'generate_random', 'label': 'Generate Random Network', 'x': 46, 'y': 190, 'width': 108, 'height': 60, 'activated': False}}
+    app.optimiseLayoutButton = { 'Optimise Layout': {'id': 'optimize_layout','label': 'Optimize Layout', 'x': 40, 'y': 360, 'width': 120, 'height': 40, 'activated': False, 'fill': 'lightGreen'}}
     app.speedCirclesPos = []
     app.selectedSpeed = 1
 
@@ -65,19 +78,42 @@ def distance(x1, y1, x2, y2):
 # Start Screen
 ############################################################
 
+
 def start_redrawAll(app):
+    drawDirectionalLinks(app)
+    for i in range(len(app.graph.nodes)):
+        x, y, r = app.graph.nodes[i]
+        drawCircle(x, y, r, border='black', fill='azure')
+        drawLabel(getLabel(i), x, y, size=12)
 
     # Background Image -- Can make this more sophisticated.
     imageWidth, imageHeight = getImageSize('welcomeImage.png')
-    drawImage('welcomeImage.png', app.width/2, app.height/2, align='center', opacity = 60, width=imageWidth*(4/5), height=imageHeight*(4/5))
-
+    # drawImage('welcomeImage.png', app.width/2, app.height/2, align='center', opacity = 60, width=imageWidth*(4/5), height=imageHeight*(4/5))
+    drawRect(0, 0, 1000, 800, fill ='white', opacity=76)
     drawLabel('Welcome!', app.width/2, app.height/2 - 50, size=24, bold=True)
     drawLabel(f'Welcome to PageRank Simulator', app.width/2, app.height/2, size=32, font='Monteserrat', bold=True)
     drawLabel('Press space to enter!', app.width/2, app.height/2 + 40, size=24)
 
+
+    
 def start_onKeyPress(app, key):
     if key == 'space':
         setActiveScreen('sim')
+        resetApp(app)
+
+
+def start_onStep(app):
+    if app.simulationRunning and len(app.graph.nodes) > 0:
+        app.totalSteps += 1
+        currentNode = app.surferIndex
+        nextNode = app.graph.takeRandomSurferStep(currentNode)
+        app.visits[nextNode] += 1
+        app.surferIndex = nextNode
+        totalVisits = sum(app.visits)
+        if totalVisits > 0:
+            for i in range(len(app.graph.nodes)):
+                app.graph.nodes[i][2] = 20 + ((app.visits[i]/totalVisits)*100)
+
 
 ############################################################
 # Simulation Screen
@@ -133,9 +169,12 @@ def sim_redrawAll(app):
     drawLabel("Speed:", 20, 300, align='left', size=12)
     drawSpeedBar(30, 320, 140, selectedSpeed=app.selectedSpeed, appRunning=app.simulationRunning)
 
-    # drawLabel("Teleportation Probability:", 20, 360, align='left', size=12)
 
-    # drawLabel("Change color on teleport?", 20, 380, align='left', size=12)
+    optimiseLayout = app.optimiseLayoutButton
+    optimiseLayoutButton = optimiseLayout['Optimise Layout']
+        
+    drawCapsule(optimiseLayoutButton['x'], optimiseLayoutButton['y'], optimiseLayoutButton['width'], optimiseLayoutButton['height'], border='black', fill=optimiseLayoutButton['fill'] if not app.simulationRunning else 'gainsboro')
+    drawLabel(optimiseLayoutButton['label'], optimiseLayoutButton['x'] + optimiseLayoutButton['width']/2, optimiseLayoutButton['y'] + optimiseLayoutButton['height']/2, size=12)
 
     drawLine(20, 430, 180, 430)
 
@@ -276,6 +315,7 @@ def sim_onMousePress(app, mouseX, mouseY):
         runSimButton = runSim['Run Simulation']
         # only do something if we're clicking in the run/stop sim button:
         if (runSimButton['x'] <= mouseX <= runSimButton['x'] + runSimButton['width'] and runSimButton['y'] <= mouseY <= runSimButton['y'] + runSimButton['height']):
+        
         # Logic here is courtesy of ChatGPT
             app.simulationRunning = not app.simulationRunning
 
@@ -289,7 +329,6 @@ def sim_onMousePress(app, mouseX, mouseY):
     
     
     # ------------------------------------------------------------------------------------------------------------------------------
-
 
     # Control Panels mouse interaction
     for key in app.buttons:
@@ -358,6 +397,15 @@ def sim_onMousePress(app, mouseX, mouseY):
             app.selectedSpeed = [0.5, 1, 1.5, 2, 4][i]
             app.stepsPerSecond = 10*app.selectedSpeed
 
+
+    optimiseLayout = app.optimiseLayoutButton
+    optimiseLayoutButton = optimiseLayout['Optimise Layout']
+    if optimiseLayoutButton['x'] <= mouseX <= optimiseLayoutButton['x'] + optimiseLayoutButton['width'] and optimiseLayoutButton['y'] <= mouseY <= optimiseLayoutButton['y'] + optimiseLayoutButton['height']:
+        if len(app.graph.nodes) > 0:
+            app.graph.nodes = optimizeNodeLayout(app.graph.nodes)
+        return
+
+
     # ------------------------------------------------------------------------------------------------------------------------------
 
     computePageRank = app.computePageRankButton
@@ -367,9 +415,7 @@ def sim_onMousePress(app, mouseX, mouseY):
     if computePageRankButton['x'] <= mouseX <= computePageRankButton['x'] + computePageRankButton['width'] and computePageRankButton['y'] <= mouseY <= computePageRankButton['y'] + computePageRankButton['height']:
         app.graph.computePagerank()
     
-
     # ------------------------------------------------------------------------------------------------------------------------------
-
 
     runSim = app.runSimButton
     runSimButton = runSim['Run Simulation']
@@ -386,10 +432,11 @@ def sim_onMousePress(app, mouseX, mouseY):
                 app.selectedNode = None
                 app.totalSteps = 0
                 app.surferMoving = False
+                app.surferIndex = None
+                app.surferOnEdge = None
             except:
                 pass
         return
-    
 
     # ------------------------------------------------------------------------------------------------------------------------------
     # CHeck if we're in the reset scores button
@@ -636,12 +683,13 @@ def sim_onKeyPress(app, key):
         return
     else:
         print(app.selectedNode)
-        if key == 'd':
+        if key == 'd' and key == 'backspace':
             app.graph.removeNode(app.selectedNode)
             resetVisits(app)
             app.selectedNode = None  
 
 def drawRanking(app):
+
     numNodes = len(app.graph.nodes)
 
     if numNodes == 0:
@@ -661,7 +709,7 @@ def drawRanking(app):
 
     if len(app.visits) == 0:
         sortedNodeList = [getLabel(i) for i in range(numNodes)]
-        sortedVisits = [0] * numNodes
+        sortedVisits = [(app.graph.nodes[i][2] - 20)/100 for i in range(numNodes)]
     else:
         labelToScore = {getLabel(i): app.visits[i] for i in range(numNodes)}
         # Sorting method taken from StackOverflow: https://stackoverflow.com/questions/7340019/sort-values-and-return-list-of-keys-from-dict-python
@@ -694,6 +742,7 @@ def drawRanking(app):
             drawLabel(label, 832, y + 10)
             drawRect(startX + 60, y, standardLength + lengthToAdd, 20, fill='dodgerBlue')
             drawLabel(f"{pythonRound(numVisits/totalVisits, 3)}", startX + 60 + (standardLength + lengthToAdd)/2, y + 10)
+
 
 def resetVisits(app):
     app.visits = [0] * len(app.graph.nodes)
