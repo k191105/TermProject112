@@ -49,8 +49,6 @@ class Graph:
         for row in self.adjacency_matrix:
             row.pop(i)
         
-    # TODO RemoveEdge Function
-
     def generateRandomGraph(self, playArea, numNodes, generateEdgeProbability):
         self.nodes = []
         self.adjacency_matrix = []
@@ -140,10 +138,9 @@ class Graph:
                     outLinks.append(i)
             if outLinks == []:
                 nextNode = random.randint(0, numNodes - 1)
-                # TODO Change color
+                # maybe Change color
             else:
                 nextNode = random.choice(outLinks)
-                # TODO Change Color
         else:
             nextNode = random.randint(0, numNodes - 1)
         
